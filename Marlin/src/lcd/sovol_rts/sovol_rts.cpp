@@ -245,7 +245,7 @@ void RTS::sdCardUpdate() {
 void RTS::init() {
   dark_mode = BL24CXX::readOneByte(FONT_EEPROM);
   AxisUnitMode = 1;
-  #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+  #if ANY(AUTO_BED_LEVELING_BILINEAR,AUTO_BED_LEVELING_UBL)
     bool zig = false;
     int8_t inStart, inStop, inInc, showcount;
     showcount = 0;
@@ -940,7 +940,13 @@ void RTS::handleData() {
         #if ENABLED(FIX_MOUNTED_PROBE)
           waitway = 3;
           sendData(1, AUTO_BED_LEVEL_ICON_VP);
-          queue.enqueue_now(F("G29"));
+          #if ENABLED(AUTO_BED_LEVELING_BILINEAR )
+            queue.enqueue_now(F("G29"));
+          #endif
+
+          #if ENABLED(AUTO_BED_LEVELING_UBL )
+            queue.enqueue_now(F("G29 P1\nG29 P3\nG29 S0"));  
+          #endif
         #endif
       }
 
@@ -1193,7 +1199,7 @@ void RTS::handleData() {
     case StoreMemoryKey: // Initialization
       if (recdat.data[0] == 0xF1) {
         settings.init_eeprom();
-        #if ENABLED(AUTO_BED_LEVELING_BILINEAR)
+        #if ANY(AUTO_BED_LEVELING_BILINEAR,AUTO_BED_LEVELING_UBL)
           bool zig = true;
           int8_t inStart, inStop, inInc, showcount;
           showcount = 0;
@@ -1623,7 +1629,6 @@ void RTS::onIdle() {
     static uint8_t last_cardpercentValue = 100;
     sendData(elapsed.value / 3600, PRINT_TIME_HOUR_VP);
     sendData((elapsed.value % 3600) / 60, PRINT_TIME_MIN_VP);
-
     if (card.isPrinting() && (last_cardpercentValue != card.percentDone())) {
       if (card.percentDone() > 0) {
         job_percent = card.percentDone();
