@@ -24,6 +24,7 @@
 #if ENABLED(SOVOL_SV06_RTS)
 
 #include "sovol_rts.h"
+#endif
 
 DB RTS::recdat;
 DB RTS::snddat;
@@ -65,10 +66,10 @@ RTS rts;
 #if HAS_BED_PROBE
   #include "../../module/probe.h"
 #endif
-
-#if HAS_FILAMENT_SENSOR
-  //#define CHECKFILAMENT
-  #include "../../feature/runout.h"
+#if ENABLED(RTS_AVAILABLE)
+#define CHECKFILEMENT false
+#if ENABLED(HOST_ACTION_COMMANDS)
+  #include "../../feature/host_actions.h"
 #endif
 
 float zprobe_zoffset;
@@ -123,7 +124,7 @@ uint16_t remain_time = 0;
 static bool last_card_insert_st;
 bool card_insert_st;
 bool sd_printing;
-
+bool Mode_flag = false;
 int16_t fan_speed;
 char cmd[MAX_CMD_SIZE + 16];
 
@@ -135,7 +136,7 @@ inline void RTS_line_to_current(const AxisEnum axis) {
 RTS::RTS() {
   recdat.head[0] = snddat.head[0] = FHONE;
   recdat.head[1] = snddat.head[1] = FHTWO;
-  ZERO(databuf);
+  memset(databuf, 0, sizeof(databuf));
 }
 
 void RTS::sdCardInit() {
@@ -357,7 +358,7 @@ int16_t RTS::receiveData() {
     && (recdat.command == 0x82 || recdat.command == 0x80)
     && databuf[4] == 0x4F && databuf[5] == 0x4B
   ) {
-    ZERO(databuf);
+     memset(databuf, 0, sizeof(databuf));
     recnum = 0;
     return -1;
   }
@@ -381,12 +382,12 @@ int16_t RTS::receiveData() {
     }
   }
   else {
-    ZERO(databuf);
+      memset(databuf, 0, sizeof(databuf));
     recnum = 0;
     // Receive the wrong data
     return -1;
   }
-  ZERO(databuf);
+    memset(databuf, 0, sizeof(databuf));
   recnum = 0;
 
   return 2;
@@ -427,8 +428,8 @@ void RTS::sendData() {
     for (uint16_t i = 0; i < snddat.len + 3; i++)
       LCD_SERIAL.write(databuf[i]);
 
-    ZERO(&snddat);
-    ZERO(databuf);
+      memset(&snddat, 0, sizeof(snddat));
+      memset(databuf, 0, sizeof(databuf));
     snddat.head[0] = FHONE;
     snddat.head[1] = FHTWO;
   }
@@ -450,7 +451,7 @@ void RTS::sendData(const char str[], const uint32_t addr, const uint8_t cmd/*=Va
     databuf[5] = addr & 0x00FF;
     for (int16_t i = 0; i < len; i++) databuf[6 + i] = str[i];
     for (int16_t i = 0; i < len + 6; i++) LCD_SERIAL.write(databuf[i]);
-    ZERO(databuf);
+      memset(databuf, 0, sizeof(databuf));
   }
 }
 
@@ -669,6 +670,13 @@ void RTS::handleData() {
         sendData(0, PRINT_TIME_MIN_VP);
         sendData(0, PRINT_SURPLUS_TIME_HOUR_VP);
         sendData(0, PRINT_SURPLUS_TIME_MIN_VP);
+
+#ifdef ACTION_ON_CANCEL
+          host_action_cancel();
+          if (card.isPrinting()) {
+              planner.synchronize();
+          }
+#endif
         sdCardStop();
         print_state = 0;
         update_time_value = 0;
@@ -694,6 +702,7 @@ void RTS::handleData() {
         // Reject to receive cmd
         change_page_number = ID_PrintResume_D;
         waitway = 1;
+        pause_z = current_position[Z_AXIS];
         card.pauseSDPrint();
         pause_action_flag = true;
         pause_flag = true;
@@ -746,11 +755,11 @@ void RTS::handleData() {
           if (TERN0(CHECKFILAMENT, runout.filament_ran_out)) { gotoPage(ID_FilamentOut_L, ID_FilamentOut_D); break; }
 
           char cmd[30];
-          sprintf_P(cmd, M23_STR, cardRec.filename[FilenamesCount]);
+          sprintf_P(cmd, PSTR("M23 %s"), cardRec.filename[FilenamesCount]);
           for (char *c = &cmd[4]; *c; c++) *c = tolower(*c);
           queue.enqueue_one_now(cmd);
           delay(20);
-          queue.enqueue_now_P(M24_STR);
+            queue.enqueue_now_P(PSTR("M24"));
 
           // Clean screen
           for (uint8_t j = 0; j < 20; j++) sendData(0, PRINT_FILE_TEXT_VP + j);
@@ -1145,10 +1154,10 @@ void RTS::handleData() {
           if (cardRec.recordcount < 0) break;
           char cmd[30];
           char *c;
-          sprintf_P(cmd, M23_STR, cardRec.filename[cardRec.recordcount]);
+          sprintf_P(cmd, PSTR("M23 %s"), cardRec.filename[cardRec.recordcount]);
           for (c = &cmd[4]; *c; c++) *c = tolower(*c);
 
-          ZERO(cmdbuf);
+          memset(cmdbuf, 0, sizeof(cmdbuf));
           strncpy(cmdbuf, cmd, 20);
           FilenamesCount = cardRec.recordcount;
 
@@ -1551,7 +1560,7 @@ void RTS::handleData() {
 
     default: break;
   }
-  ZERO(&recdat);
+    memset(&recdat, 0, sizeof(recdat));
   recdat.head[0] = FHONE;
   recdat.head[1] = FHTWO;
 }
@@ -1777,4 +1786,59 @@ void RTS_MoveAxisHoming() {
   TERN_(HAS_Z_AXIS, rts.sendData(current_position.z * 10.0f, AXIS_Z_COORD_VP));
 }
 
-#endif // SOVOL_SV06_RTS
+void RTS_USBPrint_Set() {
+    if (PrintFlag > 0) {
+        return;
+    }
+    rtscheck.RTS_SndData(0, PRINT_TIME_HOUR_VP);
+    rtscheck.RTS_SndData(0, PRINT_TIME_MIN_VP);
+    rtscheck.RTS_SndData(0, PRINT_SURPLUS_TIME_HOUR_VP);
+    rtscheck.RTS_SndData(0, PRINT_SURPLUS_TIME_MIN_VP);
+    PrintFlag = 1;
+    print_job_timer.reset();
+    print_job_timer.start();
+    // Show print progress LCD screen
+    rtscheck.RTS_SndData("USB Print", PRINT_FILE_TEXT_VP);
+    if(Mode_flag)
+    {
+        rtscheck.RTS_SndData(1, Time_VP);
+        rtscheck.RTS_SndData(ExchangePageBase + 11, ExchangepageAddr);
+    }
+    else
+    {
+        rtscheck.RTS_SndData(1, Time1_VP);
+        rtscheck.RTS_SndData(ExchangePageBase + 66, ExchangepageAddr);
+    }
+}
+
+void RTS_USBPrint_Finish() {
+    if (card.isPrinting()) {
+        return;
+    }
+    if (PrintFlag == 0) {
+        return;
+    }
+    rtscheck.RTS_SndData(0, PRINT_TIME_HOUR_VP);
+    rtscheck.RTS_SndData(0, PRINT_TIME_MIN_VP);
+    rtscheck.RTS_SndData(0, PRINT_SURPLUS_TIME_HOUR_VP);
+    rtscheck.RTS_SndData(0, PRINT_SURPLUS_TIME_MIN_VP);
+    PrintFlag = 0;
+    Update_Time_Value = 0;
+    print_job_timer.stop();
+    // Return LCD to home screen
+    rtscheck.RTS_SndData(0, PRINT_FILE_TEXT_VP);
+    if(Mode_flag)
+    {
+        rtscheck.RTS_SndData(ExchangePageBase + 1, ExchangepageAddr);
+    }
+    else
+    {
+        rtscheck.RTS_SndData(ExchangePageBase + 56, ExchangepageAddr);
+    }
+}
+
+void RTS_Set_Waitway(const char new_waitway) {
+    waitway = new_waitway;
+}
+
+#endif //RTS_AVAILABLE

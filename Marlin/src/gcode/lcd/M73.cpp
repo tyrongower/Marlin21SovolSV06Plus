@@ -31,6 +31,10 @@
 
 #if ENABLED(DWIN_LCD_PROUI)
   #include "../../lcd/e3v2/proui/dwin.h"
+#elif ENABLED(SOVOL_SV06_RTS)
+  unsigned char percentComplete = 0;
+  uint16_t timeRemaining = 0;
+  #include "../../lcd/sovol_rts/sovol_rts.h"
 #endif
 
 /**
@@ -55,6 +59,20 @@ void GcodeSuite::M73() {
         ? parser.value_float() * (PROGRESS_SCALE)
         : parser.value_byte()
       );
+#if ENABLED(SOVOL_SV06_RTS)
+    percentComplete = parser.value_byte();
+        rts.sendData((unsigned char)percentComplete, PRINT_PROCESS_ICON_VP);
+           rts.sendData((unsigned char)percentComplete, PRINT_PROCESS_VP);
+        if (percentComplete == 100)
+        {
+            RTS_USBPrint_Finish();
+        }
+        else
+        {
+            RTS_USBPrint_Set();
+        }
+#endif
+
   #endif
 
   #if ENABLED(SET_REMAINING_TIME)
@@ -74,6 +92,11 @@ void GcodeSuite::M73() {
       #endif
       #if ENABLED(SET_REMAINING_TIME)
         SERIAL_ECHOPGM(" Time left: ", ui.remaining_time / 60, "m;");
+        #if ENABLED(RTS_AVAILABLE)
+            timeRemaining = parser.value_ulong();
+            rtscheck.((timeRemaining / 60), PRINT_SURPLUS_TIME_HOUR_VP);
+            rtscheck.RTS_SndData((timeRemaining % 60), PRINT_SURPLUS_TIME_MIN_VP);
+        #endif
       #endif
       #if ENABLED(SET_INTERACTION_TIME)
         SERIAL_ECHOPGM(" Change: ", ui.interaction_time / 60, "m;");
