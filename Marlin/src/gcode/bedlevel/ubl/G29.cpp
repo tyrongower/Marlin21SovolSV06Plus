@@ -39,7 +39,11 @@ void GcodeSuite::G29() {
 
   TERN_(FULL_REPORT_TO_HOST_FEATURE, set_and_report_grblstate(M_PROBE));
 
-  bedlevel.G29();
+#if ENABLED(SSVOL_SV06_RTS)
+    RTS_Set_Waitway(3);
+#endif
+
+    bedlevel.G29();
 
   TERN_(FULL_REPORT_TO_HOST_FEATURE, set_and_report_grblstate(M_IDLE));
 }
