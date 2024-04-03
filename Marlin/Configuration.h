@@ -61,12 +61,12 @@
 // @section info
 
 // Author info of this build printed to the host during boot and M115
-#define STRING_CONFIG_H_AUTHOR "gower" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "tyrongower" // Who made the changes.
 //#define CUSTOM_VERSION_FILE Version.h // Path from the root directory (no quotes)
 #define MACVERSION      MACHINE_NAME
 #define SOFTVERSION     SHORT_BUILD_VERSION
 #define MARLINVERSION   "2.1.4"
-#define	CORP_WEBSITE_E	"www.tyrongower"
+#define	CORP_WEBSITE_E	"https://github.com/tyrongower"
 
 // @section machine
 
