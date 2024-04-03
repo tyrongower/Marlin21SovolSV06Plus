@@ -35,7 +35,7 @@
  *
  * Advanced settings can be found in Configuration_adv.h
  */
-#define CONFIGURATION_H_VERSION 02010300
+#define CONFIGURATION_H_VERSION 02010405
 
 //===========================================================================
 //============================= Getting Started =============================
@@ -61,12 +61,12 @@
 // @section info
 
 // Author info of this build printed to the host during boot and M115
-#define STRING_CONFIG_H_AUTHOR "tgower" // Who made the changes.
+#define STRING_CONFIG_H_AUTHOR "tyrongower" // Who made the changes.
 //#define CUSTOM_VERSION_FILE Version.h // Path from the root directory (no quotes)
 #define MACVERSION      MACHINE_NAME
 #define SOFTVERSION     SHORT_BUILD_VERSION
-#define MARLINVERSION   "2.1.3"
-#define	CORP_WEBSITE_E	"hostcomms"
+#define MARLINVERSION   "2.1.4"
+#define	CORP_WEBSITE_E	"https://github.com/tyrongower"
 
 // @section machine
 

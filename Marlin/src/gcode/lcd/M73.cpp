@@ -65,11 +65,11 @@ void GcodeSuite::M73() {
            rts.sendData((unsigned char)percentComplete, PRINT_PROCESS_VP);
         if (percentComplete == 100)
         {
-            RTS_USBPrint_Finish();
+            rts.RTS_USBPrint_Finish();
         }
         else
         {
-            RTS_USBPrint_Set();
+            rts.RTS_USBPrint_Set();
         }
 #endif
 
