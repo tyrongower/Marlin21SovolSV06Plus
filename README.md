@@ -1,3 +1,27 @@
+
+<p>This is a fork of the latest Marlin 2.1.x bugfix branch, with the work of the two below forks to get it working with with the Sovol SV06 screen and some common wanted features. 
+
+Given the messy intergration based on the Sovol3D code, this most likely won't end up in the official marlin release, hence why I have decided to pull them together here.  
+
+<h3>
+Source branches
+</h3>
+<ul>
+<li>2.1 merge by @saddfox  <a href="https://github.com/saddfox/Marlin/tree/sv06p_cleanup" target="_blank" >here</a> </li>
+<li>The basis of LCD and Octoprint integration by @smkent from  <a href="https://github.com/smkent/sovol-sv06-plus-firmware" target="_blank" >here</a> </li>
+</ul>
+
+
+<h3> Changes </h3>
+<ul>
+<li>Now supports <a href="https://marlinfw.org/docs/gcode/G029-ubl.html" target="_blank"> Unified Bed Leveling </a> </li>
+<li> Cancel print job from screen when using <a href="https://github.com/OctoPrint/OctoPrint" target="_blank"> Octoprint </a> </li>
+<li> Show progress on screen when using <a href="https://github.com/OctoPrint/OctoPrint" target="_blank"> Octoprint </a></li>
+<li> Does not get stuck on bed leveling screen when using <a href="https://github.com/OctoPrint/OctoPrint" target="_blank"> Octoprint </a> </li>
+</ul>
+
+</p>
+
 <p align="center"><img src="buildroot/share/pixmaps/logo/marlin-outrun-nf-500.png" height="250" alt="MarlinFirmware's logo" /></p>
 
 <h1 align="center">Marlin 3D Printer Firmware</h1>
